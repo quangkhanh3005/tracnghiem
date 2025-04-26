@@ -33,43 +33,45 @@ public class QuizService {
         this.quizResultRepository = quizResultRepository;
     }
     public int createQuiz(String title, String description, String topicName,int time, int idUser, MultipartFile image) {
-        User user=userRepository.findById(idUser).orElseThrow(()-> new RuntimeException("Không Tìm Thấy User"));
-        Topic topic= topicRepository.findByName(topicName).orElseThrow(()->new RuntimeException("Không Tìm Thấy Topic"));
+        User user = userRepository.findById(idUser).orElseThrow(() -> new RuntimeException("ko tim thay user"));
+        Topic topic = topicRepository.findByName(topicName).orElseThrow(() -> new RuntimeException("ko tiim thay topic"));
         Quiz quiz = new Quiz();
         quiz.setTitle(title);
         quiz.setDescription(description);
-        if (image != null && !image.isEmpty()) {
-            String imagePath = imageService.uploadImage(image);
-            quiz.setImage(imagePath);
-        }
-        quiz.setUser(user);
         quiz.setTopic(topic);
-        String code;
+        quiz.setUser(user);
+        quiz.setTime(time);
+        if(image!=null){
+            String img=imageService.uploadImage(image);
+            quiz.setImage(img);
+        }
         Random random = new Random();
+        String code;
         do {
-            code = String.format("%06d", random.nextInt(1000000));
+            code = String.format("%06d", random.nextInt(10000));
         } while (quizRepository.existsByCode(code));
         quiz.setCode(code);
         quiz.setCreated(new Date());
-        quiz.setTime(time);
         quizRepository.save(quiz);
         return quiz.getId();
     }
     public QuizDTO getQuizById(int id) {
-        Quiz quiz=quizRepository.findById(id).orElseThrow(()->new RuntimeException("Không Tìm Thấy Bài Thi"));
-        QuizDTO quizDTO=new QuizDTO();
+        Quiz quiz = quizRepository.findById(id).orElseThrow(() -> new RuntimeException("ko tim thay quiz"));
+        QuizDTO quizDTO = new QuizDTO();
+        UserDTO userDTO = new UserDTO();
+        userDTO.setId(quiz.getUser().getId());
+        userDTO.setUsername(quiz.getUser().getUsername());
+        userDTO.setEmail(quiz.getUser().getEmail());
+        quizDTO.setUser(userDTO);
+        quizDTO.setTopic(quiz.getTopic());
         quizDTO.setId(quiz.getId());
+        quizDTO.setCode(quiz.getCode());
         quizDTO.setTitle(quiz.getTitle());
         quizDTO.setDescription(quiz.getDescription());
-        quizDTO.setCode(quiz.getCode());
-        quizDTO.setCreated(quiz.getCreated());
-        quizDTO.setTime(quiz.getTime());
         quizDTO.setTopic(quiz.getTopic());
-        quizDTO.setImage(quiz.getImage());
-        UserDTO userDTO= new UserDTO(quiz.getUser().getId(),quiz.getUser().getUsername(),quiz.getUser().getEmail());
-        quizDTO.setUser(userDTO);
-        int totalQuestion= quiz.getQuestions().size();
-        quizDTO.setTotalQuestions(totalQuestion);
+        quizDTO.setTime(quiz.getTime());
+        quizDTO.setCreated(quiz.getCreated());
+        quizDTO.setTotalQuestions(quiz.getQuestions().size());
         return quizDTO;
     }
     public int findQuizByCode(String code) {
@@ -79,19 +81,23 @@ public class QuizService {
     }
     public List<QuizDTO> getQuizListByIdTopic(int idTopic) {
         List<QuizDTO> quizDTOList=new ArrayList<>();
-        List<Quiz> quizList=quizRepository.findAllByTopic_Id(idTopic);
+        List<Quiz> quizList=quizRepository.findAllByTopic_id(idTopic);
         for(Quiz quiz:quizList){
-            QuizDTO quizDTO=new QuizDTO();
+            QuizDTO quizDTO = new QuizDTO();
+            UserDTO userDTO = new UserDTO();
+            userDTO.setId(quiz.getUser().getId());
+            userDTO.setUsername(quiz.getUser().getUsername());
+            userDTO.setEmail(quiz.getUser().getEmail());
+            quizDTO.setUser(userDTO);
+            quizDTO.setTopic(quiz.getTopic());
             quizDTO.setId(quiz.getId());
+            quizDTO.setCode(quiz.getCode());
             quizDTO.setTitle(quiz.getTitle());
             quizDTO.setDescription(quiz.getDescription());
-            quizDTO.setCode(quiz.getCode());
-            quizDTO.setCreated(quiz.getCreated());
-            quizDTO.setTime(quiz.getTime());
             quizDTO.setTopic(quiz.getTopic());
-            quizDTO.setImage(quiz.getImage());
+            quizDTO.setTime(quiz.getTime());
+            quizDTO.setCreated(quiz.getCreated());
             quizDTO.setTotalQuestions(quiz.getQuestions().size());
-            quizDTO.setUser(new UserDTO(quiz.getUser().getId(),quiz.getUser().getUsername(),quiz.getUser().getEmail()));
             quizDTOList.add(quizDTO);
         }
         return quizDTOList;
@@ -101,36 +107,43 @@ public class QuizService {
         quizRepository.deleteById(idQuiz);
     }
     public void updateQuiz(String title, String description, String topicName, int time, int idQuiz, int idUser, MultipartFile image) {
-        Quiz quiz=quizRepository.findById(idQuiz).orElseThrow(()->new RuntimeException("Không Tìm Thấy Quiz"));
-        if(idUser!=quiz.getUser().getId()){
-            throw new RuntimeException("Không Đúng Người Tạo Quiz");
-        }
-        quiz.setTitle(title);
-        quiz.setDescription(description);
-        Topic topic=topicRepository.findByName(topicName).orElseThrow(()->new RuntimeException("Không Tìm Thấy Topic!"));
-        quiz.setTopic(topic);
-        if (image != null && !image.isEmpty()) {
-            String imagePath = imageService.uploadImage(image);
-            quiz.setImage(imagePath);
-        }
-        quiz.setTime(time);
-        quizRepository.save(quiz);
+       Quiz quiz=quizRepository.findById(idQuiz).orElseThrow(()->new RuntimeException("ko tim thay quiz"));
+       if(quiz.getUser().getId()!=idUser){
+           throw new RuntimeException("ko dung nguoi tao");
+       }
+       Topic topic=topicRepository.findByName(topicName).orElseThrow(()->new RuntimeException("ko tim thay topic"));
+       quiz.setTopic(topic);
+       if(image!=null){
+            if(quiz.getImage()!=null){
+                imageService.deleteImage(quiz.getImage());
+            }
+           String img=imageService.uploadImage(image);
+            quiz.setImage(img);
+       }
+       quiz.setTitle(title);
+       quiz.setDescription(description);
+       quiz.setTime(time);
+       quizRepository.save(quiz);
     }
     public List<QuizDTO> getQuizListUser(int idUser) {
         List<Quiz> quizList=quizRepository.findAllByUser_Id(idUser);
         List<QuizDTO> quizDTOList=new ArrayList<>();
         for(Quiz quiz:quizList){
-            QuizDTO quizDTO=new QuizDTO();
+            QuizDTO quizDTO = new QuizDTO();
+            UserDTO userDTO = new UserDTO();
+            userDTO.setId(quiz.getUser().getId());
+            userDTO.setUsername(quiz.getUser().getUsername());
+            userDTO.setEmail(quiz.getUser().getEmail());
+            quizDTO.setUser(userDTO);
+            quizDTO.setTopic(quiz.getTopic());
             quizDTO.setId(quiz.getId());
+            quizDTO.setCode(quiz.getCode());
             quizDTO.setTitle(quiz.getTitle());
             quizDTO.setDescription(quiz.getDescription());
-            quizDTO.setCode(quiz.getCode());
-            quizDTO.setCreated(quiz.getCreated());
-            quizDTO.setTime(quiz.getTime());
             quizDTO.setTopic(quiz.getTopic());
-            quizDTO.setImage(quiz.getImage());
+            quizDTO.setTime(quiz.getTime());
+            quizDTO.setCreated(quiz.getCreated());
             quizDTO.setTotalQuestions(quiz.getQuestions().size());
-            quizDTO.setUser(new UserDTO(quiz.getUser().getId(),quiz.getUser().getUsername(),quiz.getUser().getEmail()));
             quizDTOList.add(quizDTO);
         }
         return quizDTOList;

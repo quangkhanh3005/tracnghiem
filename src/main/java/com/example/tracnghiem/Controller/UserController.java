@@ -24,13 +24,13 @@ public class UserController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
     @PutMapping("changePassword")
     public ResponseEntity<?> ChangePassword(@RequestBody ChangePasswordDTO changePasswordDTO) {
         try {
             boolean checked= userService.changePassword(changePasswordDTO);
             if(checked){
                 return ResponseEntity.ok().body("Thay Đổi Mật Khẩu Thành Công!");
-
             }
             return ResponseEntity.badRequest().body("Có lỗi xảy ra trong trình thay đổi ");
         }

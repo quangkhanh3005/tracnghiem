@@ -12,7 +12,7 @@ public interface QuizRepository extends JpaRepository<Quiz,Integer> {
     boolean existsByCode(String code);
     Optional<Quiz> findById(int id);
     Optional<Quiz> findByCode(String code);
-    List<Quiz> findAllByTopic_Id(int topicId);
-    List<Quiz> findAllByUser_Id(int userId);
+   List<Quiz> findAllByTopic_id(int topic_id);
+   List<Quiz> findAllByUser_Id(int user_id);
     int id(int id);
 }

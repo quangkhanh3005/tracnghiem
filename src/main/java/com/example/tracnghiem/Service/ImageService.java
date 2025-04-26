@@ -35,4 +35,11 @@ public class ImageService {
             throw new RuntimeException("Lỗi khi lưu ảnh", e);
         }
     }
+    public void deleteImage(String imagePath) {
+        File file = new File("upload/" + imagePath);
+        if (file.exists()) {
+            file.delete();
+        }
+    }
+
 }
